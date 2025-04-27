@@ -1,0 +1,51 @@
+# s3 bucket
+# s3 bucket policy
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the S3 bucket (must be globally unique)
+    ConstraintDescription: Bucket name must be globally unique and lowercase
+  LifecycleTransitionDays:
+    Type: Number
+    Default: 30
+    Description: Number of days after which objects should transition to Glacier storage class
+
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacier
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: !Ref LifecycleTransitionDays
+                StorageClass: GLACIER
+            ExpirationInDays: 365 # Optional, set to 365 days for example
+  
+  SampleBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+            - 's3:GetObject'
+          Effect: Allow
+          Resource: !Join
+            - ''
+            - - 'arn:aws:s3:::'
+              - !Ref S3Bucket
+              - /*
+          Principal: '*'
